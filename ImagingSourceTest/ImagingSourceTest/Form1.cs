@@ -7,15 +7,23 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using ViewROI;
+using HalconDotNet;
+using System.Drawing.Imaging;
 
 namespace ImagingSourceTest
 {
     public partial class Form1 : Form
     {
+        public HWndCtrl viewController;
+        public ROIController roiController;
         public Form1()
         {
             InitializeComponent();
-            
+            roiController = new ROIController();
+            viewController = new HWndCtrl(this.hWindowControl1);
+            viewController.useROIController(roiController);
+            viewController.setViewState(HWndCtrl.MODE_VIEW_MOVE);
         }
         /// <summary>
         /// Form1_Load
@@ -38,9 +46,26 @@ namespace ImagingSourceTest
                                      MessageBoxButtons.OK, MessageBoxIcon.Information);
                     this.Close();
                 }
-            }
-        }
+                else
+                {
+                    // Let IC Imaging Control fill the complete form.
+                    //icImagingControl1.Dock = DockStyle.Fill;
+                    // Allow scaling.
+                    icImagingControl1.LiveDisplayDefault = false;
 
+                    icImagingControl1.LiveDisplayHeight = icImagingControl1.Height;
+                    icImagingControl1.LiveDisplayWidth = icImagingControl1.Width;
+
+                }
+            }
+
+
+        
+            //cmdStartLive.Enabled = icImagingControl1.DeviceValid;
+            //cmdStopLive.Enabled = icImagingControl1.DeviceValid;
+            //cmdSaveBitmap.Enabled = icImagingControl1.DeviceValid;
+
+        }
         /// <summary>
         /// cmdStartLive_Click
         ///
@@ -52,6 +77,7 @@ namespace ImagingSourceTest
         private void cmdStartLive_Click(object sender, EventArgs e)
         {
             icImagingControl1.LiveStart();
+
         }
         /// <summary>
         /// cmdStopLive_Click
@@ -101,6 +127,86 @@ namespace ImagingSourceTest
         private void icImagingControl1_DeviceLost(object sender, EventArgs e)
         {
             BeginInvoke(new DeviceLostDelegate(ref DeviceLost));
+        }
+
+        private void GetHimage_Click(object sender, EventArgs e)
+        {
+            HObject ho_Image = null, ho_Regions = null;
+            
+            HOperatorSet.GenEmptyObj(out ho_Regions);
+            if (icImagingControl1.LiveVideoRunning == true)
+                icImagingControl1.LiveStop();
+            //Bitmap btm = new Bitmap(icImagingControl1.ImageActiveBuffer.Bitmap);
+            Bitmap btm = (Bitmap)icImagingControl1.ImageActiveBuffer.Bitmap.Clone();
+            //viewController.addIconicVar(ImageConventer.ConvertBitmapToHalconImage(btm));
+            ho_Image = Bitmap2HImage_24(btm);            
+            HOperatorSet.Threshold(ho_Image,out ho_Regions, 129,170);
+            viewController.addIconicVar(ho_Image);
+            viewController.addIconicVar(ho_Regions);
+            viewController.repaint();
+            btm.Dispose();
+            GC.Collect();
+            
+        }
+        HImage Bitmap2HImage_8(Bitmap bImage)
+        {
+            Bitmap bImage8;
+            BitmapData bmData = null;
+            Rectangle rect;
+            IntPtr pBitmap;
+            IntPtr pPixels;
+            HImage hImage = new HImage();
+
+
+            rect = new Rectangle(0, 0, bImage.Width, bImage.Height);
+            bImage8 = new Bitmap(bImage.Width, bImage.Height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+            System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bImage8);
+            g.DrawImage(bImage, rect);
+            g.Dispose();
+
+
+            bmData = bImage8.LockBits(rect, ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+            pBitmap = bmData.Scan0;
+            pPixels = pBitmap;
+
+
+            hImage.GenImage1("byte", bImage.Width, bImage.Height, pPixels);
+
+
+            bImage8.UnlockBits(bmData);
+
+
+            return hImage;
+        }
+        HImage Bitmap2HImage_24(Bitmap bImage)
+        {
+            Bitmap bImage24;
+            BitmapData bmData = null;
+            Rectangle rect;
+            IntPtr pBitmap;
+            IntPtr pPixels;
+            HImage hImage = new HImage();
+
+
+            rect = new Rectangle(0, 0, bImage.Width, bImage.Height);
+            bImage24 = new Bitmap(bImage.Width, bImage.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(bImage24);
+            g.DrawImage(bImage, rect);
+            g.Dispose();
+
+
+            bmData = bImage24.LockBits(rect, ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            pBitmap = bmData.Scan0;
+            pPixels = pBitmap;
+
+
+            hImage.GenImageInterleaved(pPixels, "bgr", bImage.Width, bImage.Height, -1, "byte", 0, 0, 0, 0, -1, 0);
+
+
+            bImage24.UnlockBits(bmData);
+
+
+            return hImage;
         }
         //Bitmap bmp = new Bitmap("C:\\Projects\\1.bmp");
         //IntPtr pval = IntPtr.Zero;
