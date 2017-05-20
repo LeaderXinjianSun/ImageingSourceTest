@@ -1,0 +1,19 @@
+﻿<Window x:Class="ImagingSourceWPFTest.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Img="clr-namespace:ICImagingControlWPF1;assembly=ICImagingControlWPF1"
+        xmlns:local="clr-namespace:ImagingSourceWPFTest"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="4*"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Img:ICImagingControlWFM x:Name="myICImagingControlWFM" Loaded="myICImagingControlWFM_Loaded" DeviceLost="myICImagingControlWFM_DeviceLost"></Img:ICImagingControlWFM>
+
+    </Grid>
+</Window>
